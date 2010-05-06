@@ -25,19 +25,37 @@ WebInspector.WildfirePanel.prototype = {
             if (WebInspector.resources[i]._type == 0) {
                 resource = WebInspector.resources[i];
             }
-        } 
-        
+        }
+        var merges = [];
+        var offset = -1;
+
         for (var header in resource._responseHeaders) {
             var wildfireRegex = /X-Wf(?:-(\d+)){4}/;
             var matches = wildfireRegex.exec(header);
-            
+
             if (matches !== null && matches[1] !== null) {
                 // Store for later use. The actual header name isn't really that important.
-                // Whilst we're at it, hydrate the header to a JSON object.
-                this.wildfireHeaders[matches[1] - 1] = eval('(' + resource._responseHeaders[header].split('|')[1] + ')');
+                segments = resource._responseHeaders[header].split('|');
+                this.wildfireHeaders[matches[1] - 1] = segments[1];
+
+                if (segments[2] == "\\") {
+                    merges.push(matches[1] - 1);
+                }
             }
         }
-        
+        merges.sort();
+
+        for (var i = merges.length - 1; i >= 0; i--) {
+            offset = merges[i] + 1;
+            part = this.wildfireHeaders.splice(offset, 1);
+            this.wildfireHeaders[offset - 1] += part;
+        }
+
+        for (var i = 0; i < this.wildfireHeaders.length; i++) {
+            this.wildfireHeaders[i] = eval('(' + this.wildfireHeaders[i] + ')');
+        }
+        console.log(this.wildfireHeaders);
+
         if (this.wildfireHeaders.length !== 0)
             this._view.displayData(this.wildfireHeaders);
         
