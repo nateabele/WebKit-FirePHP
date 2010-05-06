@@ -282,10 +282,10 @@ WebInspector.WildfireView.prototype = {
                 
                 var parsedElements = this.parseData(groupData, groupDepth);
                 
-                for (var element = 0; element < parsedElements.length; element++) {
+                // for (var element = 0; element < parsedElements.length; element++) {
                     // console.log(parsedElements[element]);
-                    elements.push(this._createGroup(currentItem[0].Label, parsedElements[element])); 
-                }
+                    elements.push(this._createGroup(currentItem[0].Label, parsedElements)); 
+                // }
             }
         }
         
