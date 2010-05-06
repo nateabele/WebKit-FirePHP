@@ -225,9 +225,46 @@ WebInspector.WildfireView.prototype = {
         return blockContainer;
     },
     
+    parseGroup: function(headers) {
+        console.log(headers);
+    },
+    
     displayData: function(wildfireHeaders) {
-        for (item = 0; item < wildfireHeaders.length; item++) {
+        for (var item = 0; item < wildfireHeaders.length; item++) {
+            var currentItem = wildfireHeaders[item];
             
+            if (currentItem[0].Type === 'TABLE') {
+                // We need to format the data to our needs
+                tableData = { 'headings': [], 'rows': [] };
+                
+                for (var i = 0; i < currentItem[1][0].length; i++) {
+                    tableData['headings'][i] = currentItem[1][0][i];
+                }
+                
+                for (var i = 1; i < currentItem[1].length; i++) {
+                    tableData['rows'][i - 1] = [];
+                    
+                    for (var j = 0; j < currentItem[1][i].length; j++) {
+                        tableData['rows'][i - 1][j] = currentItem[1][i][j];
+                    }
+                }
+                
+                this.viewContainerElement.appendChild(this._createItem(currentItem[0].Label, this._createTable(tableData)));
+            } else if (currentItem[0].Type === 'LOG' || currentItem[0].Type === 'INFO' || currentItem[0].Type === 'WARN' || currentItem[0].Type === 'ERROR') {
+                this.viewContainerElement.appendChild(this._createLog(currentItem[1]));
+            } else if (currentItem[0].Type === 'GROUP_START') {
+                // var groupData = [];
+                // 
+                // for (var count = wildfireHeaders.length; count > item; count--) {
+                //     if (wildfireHeaders[count][0].Type === 'GROUP_END') {
+                //         groupData[count - item] = wildfireHeaders[count];
+                //         
+                //         delete wildfireHeaders[count];
+                //     }
+                // }
+                // 
+                // this.parseGroup(groupData);
+            }
         }
         
         // this.viewContainerElement.appendChild(this._createItem('Foo', this._createLog('Oh hai')));
