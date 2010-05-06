@@ -57,7 +57,7 @@ WebInspector.WildfirePanel.prototype = {
         console.log(this.wildfireHeaders);
 
         if (this.wildfireHeaders.length !== 0)
-            this._view.displayData(this.wildfireHeaders);
+            this._view.displayElements(this._view.parseData(this.wildfireHeaders));
         
     },
     
@@ -243,12 +243,76 @@ WebInspector.WildfireView.prototype = {
         return blockContainer;
     },
     
-    displayData: function(wildfireHeaders) {
-        for (item = 0; item < wildfireHeaders.length; item++) {
-            
+    parseData: function(headers, groupDepth) {
+        var elements = [];
+        
+        if (groupDepth == undefined) {
+            groupDepth = 0;
         }
         
-        // this.viewContainerElement.appendChild(this._createItem('Foo', this._createLog('Oh hai')));
+        for (var item = 0; item < headers.length; item++) {
+            console.log(item);
+            
+            var currentItem = headers[item];
+            
+            if (currentItem[0].Type === 'TABLE') {
+                // We need to format the data to our needs
+                tableData = { 'headings': [], 'rows': [] };
+                
+                for (var i = 0; i < currentItem[1][0].length; i++) {
+                    tableData['headings'][i] = currentItem[1][0][i];
+                }
+                
+                for (var i = 1; i < currentItem[1].length; i++) {
+                    tableData['rows'][i - 1] = [];
+                    
+                    for (var j = 0; j < currentItem[1][i].length; j++) {
+                        tableData['rows'][i - 1][j] = currentItem[1][i][j];
+                    }
+                }
+                
+                elements.push(this._createItem(currentItem[0].Label, this._createTable(tableData)));
+            } else if (currentItem[0].Type === 'LOG' || currentItem[0].Type === 'INFO' || currentItem[0].Type === 'WARN' || currentItem[0].Type === 'ERROR') {
+                elements.push(this._createLog(currentItem[1]));
+            } else if (currentItem[0].Type === 'GROUP_START') {
+                groupDepth++; 
+                
+                // var foo = document.createElement('h1');
+                // foo.innerHTML = 'foo';
+                // elements.push(this._createGroup(currentItem[0].Label, foo)); 
+                
+                var groupData = [];
+                
+                for (var count = item + 1; count < headers.length; count++) {
+                    if (groupDepth === 0) {
+                        item = count;
+                        break;
+                    }
+                    
+                    if (headers[count][0].Type === 'GROUP_START') {
+                        groupDepth++;
+                    } else if (headers[count][0].Type === 'GROUP_END') {
+                        groupDepth--;
+                    }
+                    
+                    groupData.push(headers[count]);
+                }
+                
+                var parsedElements = this.parseData(groupData, groupDepth);
+                
+                for (var element = 0; element < parsedElements.length; element++) {
+                    // console.log(parsedElements[element]);
+                    elements.push(this._createGroup(currentItem[0].Label, parsedElements[element])); 
+                }
+            }
+        }
+        
+        return elements;
     },
     
+    displayElements: function(elements) {
+        for (var i = 0; i < elements.length; i++) {
+            this.viewContainerElement.appendChild(elements[i]);
+        }
+    }
 };
