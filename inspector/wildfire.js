@@ -39,7 +39,7 @@ WebInspector.WildfirePanel.prototype = {
         }
         
         if (this.wildfireHeaders.length !== 0)
-            this._view.displayData(this.wildfireHeaders);
+            this._view.displayElements(this._view.parseData(this.wildfireHeaders));
         
     },
     
@@ -225,13 +225,17 @@ WebInspector.WildfireView.prototype = {
         return blockContainer;
     },
     
-    parseGroup: function(headers) {
-        console.log(headers);
-    },
-    
-    displayData: function(wildfireHeaders) {
-        for (var item = 0; item < wildfireHeaders.length; item++) {
-            var currentItem = wildfireHeaders[item];
+    parseData: function(headers, groupDepth) {
+        var elements = [];
+        
+        if (groupDepth == undefined) {
+            groupDepth = 0;
+        }
+        
+        for (var item = 0; item < headers.length; item++) {
+            console.log(item);
+            
+            var currentItem = headers[item];
             
             if (currentItem[0].Type === 'TABLE') {
                 // We need to format the data to our needs
@@ -249,25 +253,48 @@ WebInspector.WildfireView.prototype = {
                     }
                 }
                 
-                this.viewContainerElement.appendChild(this._createItem(currentItem[0].Label, this._createTable(tableData)));
+                elements.push(this._createItem(currentItem[0].Label, this._createTable(tableData)));
             } else if (currentItem[0].Type === 'LOG' || currentItem[0].Type === 'INFO' || currentItem[0].Type === 'WARN' || currentItem[0].Type === 'ERROR') {
-                this.viewContainerElement.appendChild(this._createLog(currentItem[1]));
+                elements.push(this._createLog(currentItem[1]));
             } else if (currentItem[0].Type === 'GROUP_START') {
-                // var groupData = [];
-                // 
-                // for (var count = wildfireHeaders.length; count > item; count--) {
-                //     if (wildfireHeaders[count][0].Type === 'GROUP_END') {
-                //         groupData[count - item] = wildfireHeaders[count];
-                //         
-                //         delete wildfireHeaders[count];
-                //     }
-                // }
-                // 
-                // this.parseGroup(groupData);
+                groupDepth++; 
+                
+                // var foo = document.createElement('h1');
+                // foo.innerHTML = 'foo';
+                // elements.push(this._createGroup(currentItem[0].Label, foo)); 
+                
+                var groupData = [];
+                
+                for (var count = item + 1; count < headers.length; count++) {
+                    if (groupDepth === 0) {
+                        item = count;
+                        break;
+                    }
+                    
+                    if (headers[count][0].Type === 'GROUP_START') {
+                        groupDepth++;
+                    } else if (headers[count][0].Type === 'GROUP_END') {
+                        groupDepth--;
+                    }
+                    
+                    groupData.push(headers[count]);
+                }
+                
+                var parsedElements = this.parseData(groupData, groupDepth);
+                
+                for (var element = 0; element < parsedElements.length; element++) {
+                    // console.log(parsedElements[element]);
+                    elements.push(this._createGroup(currentItem[0].Label, parsedElements[element])); 
+                }
             }
         }
         
-        // this.viewContainerElement.appendChild(this._createItem('Foo', this._createLog('Oh hai')));
+        return elements;
     },
     
+    displayElements: function(elements) {
+        for (var i = 0; i < elements.length; i++) {
+            this.viewContainerElement.appendChild(elements[i]);
+        }
+    }
 };
